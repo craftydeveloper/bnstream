@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BNStream - Stream Your four.meme Tokens on BNB Chain</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/ethers@6.9.0/dist/ethers.umd.min.js"></script>
+    <script src="https://cdn.socket.io/4.6.0/socket.io.min.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">📺</span>
+                    <span class="logo-text">BNStream</span>
+                </div>
+                
+                <div class="header-subtitle">
+                    Stream Your four.meme Tokens on BNB Chain
+                </div>
+
+                <div class="header-actions">
+                    <button id="connectWalletBtn" class="btn btn-outline">
+                        🔗 Connect Wallet
+                    </button>
+                    <button id="goLiveBtn" class="btn btn-primary" disabled>
+                        🎬 Go Live
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Search Bar -->
+    <section class="search-section">
+        <div class="container">
+            <div class="search-container">
+                <div class="search-wrapper">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchInput" class="search-input" placeholder="Search tokens by name, symbol, or contract address...">
+                    <button id="searchBtn" class="search-btn">Search</button>
+                </div>
+                <div id="searchResults" class="search-results"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+        <div class="container">
+            <div class="tabs">
+                <button class="tab active" data-tab="trending">
+                    🔥 Trending
+                </button>
+                <button class="tab" data-tab="streams">
+                    📺 Live Streams
+                </button>
+                <button class="tab" data-tab="tokens">
+                    💎 All Tokens
+                </button>
+                <button class="tab" id="adminTab" style="display: none;" data-tab="admin">
+                    ⚙️ Admin
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            
+            <!-- Trending Section -->
+            <section id="trendingSection" class="content-section active">
+                <div class="section-header">
+                    <h2 class="section-title">🔥 Trending on four.meme</h2>
+                    <p class="section-subtitle">Top tokens by 24h volume</p>
+                </div>
+                <div id="trendingTokens" class="tokens-grid">
+                    <div class="loading">Loading trending tokens...</div>
+                </div>
+            </section>
+
+            <!-- Live Streams Section -->
+            <section id="streamsSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">📺 Live Now</h2>
+                    <p class="section-subtitle">Watch creators streaming their tokens</p>
+                </div>
+                <div id="liveStreams" class="streams-grid">
+                    <div class="loading">Loading live streams...</div>
+                </div>
+            </section>
+
+            <!-- All Tokens Section -->
+            <section id="tokensSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">💎 All Tokens</h2>
+                    <p class="section-subtitle">Discover four.meme tokens</p>
+                </div>
+                <div id="allTokens" class="tokens-grid">
+                    <div class="loading">Loading tokens...</div>
+                </div>
+            </section>
+
+            <!-- Admin Section -->
+            <section id="adminSection" class="content-section">
+                <div class="section-header">
+                    <h2 class="section-title">⚙️ Admin Dashboard</h2>
+                    <p class="section-subtitle">Platform analytics and management</p>
+                </div>
+                <div id="adminDashboard" class="admin-dashboard">
+                    <div class="loading">Loading admin data...</div>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Go Live Modal -->
+    <div id="goLiveModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🎬 Go Live</h3>
+                <button class="modal-close" onclick="closeGoLiveModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Stream Title</label>
+                    <input type="text" id="streamTitle" class="form-control" placeholder="E.g., MOON Token Technical Analysis">
+                    <small>Give your stream an engaging title</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Which token are you streaming about?</label>
+                    <select id="streamTokenSymbol" class="form-control">
+                        <option value="">-- Select your token --</option>
+                    </select>
+                    <small>💡 You can only stream about tokens you created</small>
+                </div>
+
+                <div class="form-group">
+                    <label>Stream Type</label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="streamType" value="web" checked onchange="toggleStreamType()">
+                            <span>📹 Browser Streaming (Webcam)</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="streamType" value="obs" onchange="toggleStreamType()">
+                            <span>🎥 OBS Studio / External Software</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="obsInstructions" class="obs-instructions" style="display: none;">
+                    <div class="info-box">
+                        <strong>📺 OBS Setup Instructions:</strong>
+                        <ol>
+                            <li>After creating stream, you'll get RTMP URL and Stream Key</li>
+                            <li>Open OBS → Settings → Stream</li>
+                            <li>Service: Custom</li>
+                            <li>Paste the RTMP URL and Stream Key</li>
+                            <li>Click "Start Streaming"</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeGoLiveModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="createStream()">🚀 Create Stream</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stream Modal -->
+    <div id="streamModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="streamModalTitle">Stream</h3>
+                <button class="modal-close" onclick="closeStreamModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="videoPlayer" class="video-player"></div>
+                <div id="obsCredentials" class="obs-credentials" style="display: none;">
+                    <h4>🎥 Your Streaming Credentials</h4>
+                    <div class="credential-item">
+                        <label>RTMP URL:</label>
+                        <div class="credential-value">
+                            <code id="rtmpUrl"></code>
+                            <button onclick="copyToClipboard('rtmpUrl')" class="btn-copy">Copy</button>
+                        </div>
+                    </div>
+                    <div class="credential-item">
+                        <label>Stream Key:</label>
+                        <div class="credential-value">
+                            <code id="streamKey"></code>
+                            <button onclick="copyToClipboard('streamKey')" class="btn-copy">Copy</button>
+                        </div>
+                    </div>
+                    <div class="info-box">
+                        <strong>Start streaming:</strong>
+                        <p>Use these credentials in OBS or your streaming software to go live!</p>
+                    </div>
+                </div>
+                <div class="stream-sidebar">
+                    <div class="stream-info">
+                        <h4 id="streamInfoTitle">Stream Title</h4>
+                        <p id="streamInfoToken">Token: ...</p>
+                        <div class="viewer-count">
+                            <span class="live-indicator">🔴</span>
+                            <span id="viewerCount">0</span> viewers
+                        </div>
+                    </div>
+                    <div class="chat-container">
+                        <div id="chatMessages" class="chat-messages"></div>
+                        <div class="chat-input-container">
+                            <input type="text" id="chatInput" class="chat-input" placeholder="Type a message...">
+                            <button onclick="sendChatMessage()" class="btn-send">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Token Page Modal -->
+    <div id="tokenModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3 id="tokenModalTitle">Token</h3>
+                <button class="modal-close" onclick="closeTokenModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <div id="tokenDetails" class="token-details-page">
+                    <div class="loading">Loading token...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h4>BNStream</h4>
+                    <p>Stream your four.meme tokens to the world</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Community</h4>
+                    <a href="#" class="footer-link" id="twitterLink">🐦 Follow us on Twitter</a>
+                </div>
+                <div class="footer-section">
+                    <div class="integration-badge">
+                        Integrated with <strong>four.meme</strong> for token discovery
+                    </div>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 BNStream. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
